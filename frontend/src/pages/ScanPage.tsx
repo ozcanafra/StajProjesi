@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { askReportQuestion, getChatHistory, getScan, getScanDiff } from '../api/endpoints'
+import { askReportQuestion, downloadReportPdf, getChatHistory, getScan, getScanDiff } from '../api/endpoints'
 import { SeverityBadge } from '../components/SeverityBadge'
 import type { ChatMessage, ScanDetail, ScanDiff } from '../types'
 
@@ -13,6 +13,7 @@ export function ScanPage() {
   const [chat, setChat] = useState<ChatMessage[]>([])
   const [question, setQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   async function refresh() {
@@ -55,6 +56,15 @@ export function ScanPage() {
     }
   }
 
+  async function handleDownload() {
+    setIsDownloading(true)
+    try {
+      await downloadReportPdf(id)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   if (!scan) return <div className="p-8 text-slate-400">Yukleniyor...</div>
 
   return (
@@ -78,19 +88,28 @@ export function ScanPage() {
         <div className="mb-8 rounded-md border border-purple-900 bg-purple-950/20 p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-medium text-purple-300">AI Risk Raporu</h2>
-            <span className="flex items-center gap-2 text-xl font-semibold">
-              {scan.report.risk_score.toFixed(0)}/100
-              {diff?.risk_score_delta != null && diff.risk_score_delta !== 0 && (
-                <span
-                  className={`text-sm font-normal ${
-                    diff.risk_score_delta > 0 ? 'text-red-400' : 'text-emerald-400'
-                  }`}
-                >
-                  ({diff.risk_score_delta > 0 ? '+' : ''}
-                  {diff.risk_score_delta.toFixed(0)})
-                </span>
-              )}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-2 text-xl font-semibold">
+                {scan.report.risk_score.toFixed(0)}/100
+                {diff?.risk_score_delta != null && diff.risk_score_delta !== 0 && (
+                  <span
+                    className={`text-sm font-normal ${
+                      diff.risk_score_delta > 0 ? 'text-red-400' : 'text-emerald-400'
+                    }`}
+                  >
+                    ({diff.risk_score_delta > 0 ? '+' : ''}
+                    {diff.risk_score_delta.toFixed(0)})
+                  </span>
+                )}
+              </span>
+              <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="rounded-md border border-purple-700 px-3 py-1.5 text-xs font-medium text-purple-300 hover:bg-purple-900/30 disabled:opacity-50"
+              >
+                {isDownloading ? 'Hazirlaniyor...' : 'PDF indir'}
+              </button>
+            </div>
           </div>
           <p className="mb-3 text-sm text-slate-200">{scan.report.executive_summary}</p>
           <p className="mb-4 text-sm text-slate-400">{scan.report.technical_summary}</p>

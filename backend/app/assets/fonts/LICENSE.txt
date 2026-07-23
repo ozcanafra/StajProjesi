@@ -1,0 +1,5 @@
+DejaVu fonts (DejaVuSans.ttf, DejaVuSans-Bold.ttf) are bundled here to
+render Turkish characters in generated PDF reports. They are released
+under the free Bitstream Vera / DejaVu license (see
+https://dejavu-fonts.github.io/License.html), which permits
+redistribution and embedding.

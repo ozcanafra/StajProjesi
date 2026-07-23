@@ -78,6 +78,22 @@ export async function getScanDiff(scanId: number): Promise<ScanDiff> {
   return data
 }
 
+export async function downloadReportPdf(scanId: number): Promise<void> {
+  const response = await apiClient.get(`/api/scans/${scanId}/report.pdf`, { responseType: 'blob' })
+  const disposition = response.headers['content-disposition'] as string | undefined
+  const match = disposition?.match(/filename="?([^"]+)"?/)
+  const filename = match?.[1] ?? `sentrascan-scan-${scanId}.pdf`
+
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
+
 export async function getChatHistory(scanId: number): Promise<ChatMessage[]> {
   const { data } = await apiClient.get<ChatMessage[]>(`/api/reports/${scanId}/chat`)
   return data

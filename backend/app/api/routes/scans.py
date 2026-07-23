@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_user, get_owned_target
@@ -7,6 +8,7 @@ from app.models.scan import STATUS_COMPLETED, Scan
 from app.models.user import User
 from app.schemas.scan import AVAILABLE_MODULES, ScanCreate, ScanDetailOut, ScanDiffOut, ScanOut
 from app.services.diff import compute_diff
+from app.services.pdf_report import build_report_pdf
 
 router = APIRouter(prefix="/api", tags=["scans"])
 
@@ -107,4 +109,21 @@ def get_scan_diff(
         new_findings=diff["new"],
         resolved_findings=diff["resolved"],
         persisting_count=len(diff["persisting"]),
+    )
+
+
+@router.get("/scans/{scan_id}/report.pdf")
+def download_report_pdf(
+    scan_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+) -> Response:
+    scan = _get_owned_scan(scan_id, db, current_user)
+    if scan.report is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bu tarama icin henuz bir rapor yok")
+
+    pdf_bytes = build_report_pdf(scan.target.domain, scan, scan.report, scan.findings)
+    filename = f"sentrascan-{scan.target.domain}-{scan.id}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

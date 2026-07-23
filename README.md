@@ -79,10 +79,11 @@ npm run dev
 3. Verilen DNS TXT kaydını domain'e ekleyip "Doğrulamayı kontrol et" ile sahiplik doğrulamasını tamamla
 4. Modülleri seçip taramayı başlat (arka planda Celery worker çalışır)
 5. Tarama tamamlanınca AI risk raporunu incele, rapor hakkında soru sor
+6. İstersen raporu PDF olarak indir
 
 ## Yol haritası
 
 - [x] Aynı hedefin geçmiş taramaları arasında trend/diff analizi (`GET /api/scans/{id}/diff`, AI özetine trend bağlamı besleniyor)
 - [x] Ek pasif web-vuln kontrolleri (`webvuln` modülü: eski JS kütüphaneleri, açık dizin listeleme, hassas dosya sızıntısı, güvensiz form ayarları)
-- PDF rapor export
+- [x] PDF rapor export (`GET /api/scans/{id}/report.pdf`, frontend'de "PDF indir" butonu)
 - Alembic ile şema migration yönetimi
