@@ -6,12 +6,13 @@ from app.models.report import Report
 from app.models.scan import STATUS_COMPLETED, STATUS_FAILED, STATUS_RUNNING, Scan
 from app.models.target import Target
 from app.services.ai.report_generator import generate_report
-from app.services.scanners import headers_tls, recon
+from app.services.scanners import headers_tls, recon, webvuln
 from app.tasks.celery_app import celery_app
 
 SCANNER_MODULES = {
     "recon": recon.run,
     "headers_tls": headers_tls.run,
+    "webvuln": webvuln.run,
 }
 
 

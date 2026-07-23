@@ -12,6 +12,7 @@ import { AVAILABLE_MODULES, type Scan, type Target, type VerifyInstructions } fr
 const MODULE_LABELS: Record<string, string> = {
   recon: 'Recon (subdomain + port)',
   headers_tls: 'HTTP Header / TLS analiz',
+  webvuln: 'Pasif web-vuln (eski JS kutuphanesi, acik dizin, guvensiz form)',
 }
 
 const STATUS_LABELS: Record<string, string> = {

@@ -20,7 +20,7 @@ backend (FastAPI)  ---->  PostgreSQL (kullanıcı/hedef/tarama/bulgu/rapor)
         v  Celery task kuyruğu
 worker (Celery)  ---->  Redis (broker)
         |
-        +--> scanner modülleri (recon, headers_tls)
+        +--> scanner modülleri (recon, headers_tls, webvuln)
         +--> AI servis katmanı (Anthropic API) --> Report + chat
 ```
 
@@ -30,6 +30,7 @@ worker (Celery)  ---->  Redis (broker)
 |---|---|
 | `recon` | crt.sh üzerinden pasif alt alan adı keşfi + hedefin kendi IP'sine karşı sınırlı bir TCP port taraması |
 | `headers_tls` | HTTP güvenlik header'ları (HSTS, CSP, X-Frame-Options...), cookie bayrakları, TLS protokol sürümü ve sertifika geçerlilik süresi kontrolü |
+| `webvuln` | Eski/güvenlik açıklı JS kütüphaneleri, açık dizin listeleme, hassas dosya sızıntısı (`.git/HEAD`, `.env`), mixed-content ve GET ile şifre gönderen formlar |
 | AI rapor katmanı | Yukarıdaki modüllerin ham bulgularını risk skoru + özet + önceliklendirilmiş remediation listesine dönüştürür, ardından bulgular hakkında soru-cevap sağlar |
 
 Tüm kontroller **pasiftir**: aktif exploit denemesi, kimlik doğrulama bypass'ı veya saldırı payload'u içermez.
@@ -82,6 +83,6 @@ npm run dev
 ## Yol haritası
 
 - [x] Aynı hedefin geçmiş taramaları arasında trend/diff analizi (`GET /api/scans/{id}/diff`, AI özetine trend bağlamı besleniyor)
-- Ek pasif web-vuln kontrolleri (eski JS kütüphaneleri, açık dizin listeleme)
+- [x] Ek pasif web-vuln kontrolleri (`webvuln` modülü: eski JS kütüphaneleri, açık dizin listeleme, hassas dosya sızıntısı, güvensiz form ayarları)
 - PDF rapor export
 - Alembic ile şema migration yönetimi

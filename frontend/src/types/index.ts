@@ -81,4 +81,4 @@ export interface ScanDiff {
   persisting_count: number
 }
 
-export const AVAILABLE_MODULES = ['recon', 'headers_tls'] as const
+export const AVAILABLE_MODULES = ['recon', 'headers_tls', 'webvuln'] as const

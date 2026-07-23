@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from app.schemas.finding import FindingOut
 from app.schemas.report import ReportOut
 
-AVAILABLE_MODULES = ("recon", "headers_tls")
+AVAILABLE_MODULES = ("recon", "headers_tls", "webvuln")
 
 
 class ScanCreate(BaseModel):
