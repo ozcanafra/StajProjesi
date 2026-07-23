@@ -30,6 +30,7 @@ def check_headers(domain: str) -> list[dict]:
         return [
             {
                 "module": "headers_tls",
+                "key": "https-unreachable",
                 "severity": "medium",
                 "title": "HTTPS uzerinden erisilemedi",
                 "description": f"{url} adresine baglanilamadi: {exc}",
@@ -42,6 +43,7 @@ def check_headers(domain: str) -> list[dict]:
             findings.append(
                 {
                     "module": "headers_tls",
+                    "key": f"missing-header:{header}",
                     "severity": severity,
                     "title": f"Eksik guvenlik header'i: {header}",
                     "description": description,
@@ -54,6 +56,7 @@ def check_headers(domain: str) -> list[dict]:
         findings.append(
             {
                 "module": "headers_tls",
+                "key": "server-header-disclosure",
                 "severity": "info",
                 "title": "Sunucu bilgisi Server header'inda ifsa ediliyor",
                 "description": f"Server header degeri: {server_header}",
@@ -72,6 +75,7 @@ def check_headers(domain: str) -> list[dict]:
             findings.append(
                 {
                     "module": "headers_tls",
+                    "key": f"insecure-cookie:{cookie.name}",
                     "severity": "low",
                     "title": f"Guvensiz cookie ayari: {cookie.name}",
                     "description": ", ".join(issues),
@@ -83,6 +87,7 @@ def check_headers(domain: str) -> list[dict]:
         findings.append(
             {
                 "module": "headers_tls",
+                "key": "headers-ok",
                 "severity": "info",
                 "title": "Temel guvenlik header'lari mevcut",
                 "description": "Kontrol edilen zorunlu header'larin tumu bulundu.",
@@ -106,6 +111,7 @@ def check_tls(domain: str) -> list[dict]:
         return [
             {
                 "module": "headers_tls",
+                "key": "tls-handshake-failed",
                 "severity": "medium",
                 "title": "TLS handshake basarisiz",
                 "description": f"{domain}:443 uzerinde TLS baglantisi kurulamadi: {exc}",
@@ -117,6 +123,7 @@ def check_tls(domain: str) -> list[dict]:
         findings.append(
             {
                 "module": "headers_tls",
+                "key": "weak-tls-protocol",
                 "severity": "high",
                 "title": f"Zayif TLS protokolu kullaniliyor: {protocol}",
                 "description": "Modern istemciler TLS 1.2 veya ustunu beklemelidir.",
@@ -127,6 +134,7 @@ def check_tls(domain: str) -> list[dict]:
         findings.append(
             {
                 "module": "headers_tls",
+                "key": "tls-protocol",
                 "severity": "info",
                 "title": f"Negotiated TLS protokolu: {protocol}",
                 "description": "Baglanti sirasinda kullanilan TLS surumu.",
@@ -149,6 +157,7 @@ def check_tls(domain: str) -> list[dict]:
         findings.append(
             {
                 "module": "headers_tls",
+                "key": "tls-cert-expiry",
                 "severity": severity,
                 "title": title,
                 "description": f"Sertifika bitis tarihi: {not_after}",

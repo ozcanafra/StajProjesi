@@ -3,6 +3,7 @@ import type {
   ChatMessage,
   Scan,
   ScanDetail,
+  ScanDiff,
   Target,
   User,
   VerifyInstructions,
@@ -69,6 +70,11 @@ export async function createScan(targetId: number, modules: string[]): Promise<S
 
 export async function getScan(scanId: number): Promise<ScanDetail> {
   const { data } = await apiClient.get<ScanDetail>(`/api/scans/${scanId}`)
+  return data
+}
+
+export async function getScanDiff(scanId: number): Promise<ScanDiff> {
+  const { data } = await apiClient.get<ScanDiff>(`/api/scans/${scanId}/diff`)
   return data
 }
 

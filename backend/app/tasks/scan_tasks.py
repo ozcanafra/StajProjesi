@@ -36,11 +36,36 @@ def run_scan_task(scan_id: int) -> None:
                     continue
                 all_findings.extend(scanner_fn(target.domain))
 
+            previous_scan = (
+                db.query(Scan)
+                .filter(
+                    Scan.target_id == scan.target_id,
+                    Scan.status == STATUS_COMPLETED,
+                    Scan.id != scan.id,
+                    Scan.created_at < scan.created_at,
+                )
+                .order_by(Scan.created_at.desc())
+                .first()
+            )
+
+            trend_context = None
+            if previous_scan is not None:
+                previous_keys = {f.key for f in previous_scan.findings}
+                current_keys = {f.get("key", f["title"]) for f in all_findings}
+                new_count = len(current_keys - previous_keys)
+                resolved_count = len(previous_keys - current_keys)
+                trend_context = (
+                    f"Onceki tarama ({previous_scan.created_at.date()}) ile kiyaslandiginda "
+                    f"{new_count} yeni bulgu tespit edildi, {resolved_count} bulgu artik gorunmuyor "
+                    f"(kapatilmis olabilir). Onceki risk skoru: {previous_scan.risk_score}."
+                )
+
             for f in all_findings:
                 db.add(
                     Finding(
                         scan_id=scan.id,
                         module=f["module"],
+                        key=f.get("key", f["title"]),
                         severity=f["severity"],
                         title=f["title"],
                         description=f.get("description", ""),
@@ -49,7 +74,7 @@ def run_scan_task(scan_id: int) -> None:
                 )
             db.commit()
 
-            report_data = generate_report(target.domain, all_findings)
+            report_data = generate_report(target.domain, all_findings, trend_context)
             db.add(
                 Report(
                     scan_id=scan.id,

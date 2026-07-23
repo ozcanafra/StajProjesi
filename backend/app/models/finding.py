@@ -14,6 +14,7 @@ class Finding(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     scan_id: Mapped[int] = mapped_column(ForeignKey("scans.id"), nullable=False)
     module: Mapped[str] = mapped_column(String(50), nullable=False)
+    key: Mapped[str] = mapped_column(String(255), nullable=False)
     severity: Mapped[str] = mapped_column(String(20), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="")

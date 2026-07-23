@@ -89,6 +89,7 @@ def run(domain: str) -> list[dict]:
     findings.append(
         {
             "module": "recon",
+            "key": "subdomain-summary",
             "severity": "info",
             "title": f"{len(subdomains)} alt alan adi/host tespit edildi",
             "description": "Sertifika seffafligi (crt.sh) kayitlarindan pasif olarak toplandi.",
@@ -121,6 +122,7 @@ def run(domain: str) -> list[dict]:
                 findings.append(
                     {
                         "module": "recon",
+                        "key": f"open-port:{host}:{port}",
                         "severity": PORT_SEVERITY.get(port, "low"),
                         "title": f"Acik port: {host}:{port} ({PORT_LABELS.get(port, 'unknown')})",
                         "description": f"{host} ({ip}) uzerinde {port} numarali port disaridan erisilebilir durumda.",

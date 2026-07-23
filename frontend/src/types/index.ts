@@ -72,4 +72,13 @@ export interface ChatMessage {
   created_at: string
 }
 
+export interface ScanDiff {
+  previous_scan_id: number | null
+  previous_created_at: string | null
+  risk_score_delta: number | null
+  new_findings: Finding[]
+  resolved_findings: Finding[]
+  persisting_count: number
+}
+
 export const AVAILABLE_MODULES = ['recon', 'headers_tls'] as const

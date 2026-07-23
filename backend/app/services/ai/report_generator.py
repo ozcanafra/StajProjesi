@@ -30,7 +30,9 @@ ONLY valid JSON (baska hicbir metin olmadan) formatinda su sekilde yanitlamak:
 }
 
 prioritized_findings listesini risk siralamasina gore (en kritik once) diz. \
-Turkce yaz. JSON disinda hicbir aciklama ekleme."""
+Eger sana onceki taramayla kiyaslanmis bir degisim (trend) bilgisi verilirse, \
+executive_summary'nin icine bu degisimi (yeni/kapatilan bulgu sayisi, risk \
+yonelimi) mutlaka kisaca yansit. Turkce yaz. JSON disinda hicbir aciklama ekleme."""
 
 CHAT_SYSTEM_PROMPT = """Sen bir siber guvenlik danismanisin. Kullaniciya, elindeki \
 tarama raporu hakkinda sorulan sorulari, rapor baglamini kullanarak Turkce ve \
@@ -44,16 +46,19 @@ def _client() -> anthropic.Anthropic | None:
     return anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
-def _fallback_report(findings: list[dict]) -> dict[str, Any]:
+def _fallback_report(findings: list[dict], trend_context: str | None = None) -> dict[str, Any]:
     severity_weight = {"info": 0, "low": 10, "high": 40, "critical": 60, "medium": 25}
     score = min(100, sum(severity_weight.get(f["severity"], 0) for f in findings))
     prioritized = sorted(findings, key=lambda f: severity_weight.get(f["severity"], 0), reverse=True)
+    summary = (
+        "AI rapor katmani yapilandirilmamis (ANTHROPIC_API_KEY tanimli degil). "
+        f"Toplam {len(findings)} ham bulgu tespit edildi, agirliklandirilmis risk skoru: {score}."
+    )
+    if trend_context:
+        summary += f" {trend_context}"
     return {
         "risk_score": score,
-        "executive_summary": (
-            "AI rapor katmani yapilandirilmamis (ANTHROPIC_API_KEY tanimli degil). "
-            f"Toplam {len(findings)} ham bulgu tespit edildi, agirliklandirilmis risk skoru: {score}."
-        ),
+        "executive_summary": summary,
         "technical_summary": "Detayli teknik yorum icin ANTHROPIC_API_KEY ve ANTHROPIC_MODEL ayarlarini yapilandirin.",
         "prioritized_findings": [
             {
@@ -67,15 +72,17 @@ def _fallback_report(findings: list[dict]) -> dict[str, Any]:
     }
 
 
-def generate_report(target_domain: str, findings: list[dict]) -> dict[str, Any]:
+def generate_report(target_domain: str, findings: list[dict], trend_context: str | None = None) -> dict[str, Any]:
     client = _client()
     if client is None:
-        return _fallback_report(findings)
+        return _fallback_report(findings, trend_context)
 
     user_prompt = (
         f"Hedef domain: {target_domain}\n\nHam bulgular (JSON):\n"
         f"{json.dumps(findings, ensure_ascii=False, indent=2)}"
     )
+    if trend_context:
+        user_prompt += f"\n\nOnceki taramaya gore degisim: {trend_context}"
 
     try:
         response = client.messages.create(
@@ -90,7 +97,7 @@ def generate_report(target_domain: str, findings: list[dict]) -> dict[str, Any]:
         data["risk_score"] = float(data.get("risk_score", 0))
         return data
     except (anthropic.APIError, json.JSONDecodeError, ValueError, KeyError):
-        return _fallback_report(findings)
+        return _fallback_report(findings, trend_context)
 
 
 def chat_about_report(report: Any, history: list[dict], question: str) -> str:

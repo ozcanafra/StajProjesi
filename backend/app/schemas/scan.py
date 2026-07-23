@@ -29,3 +29,12 @@ class ScanOut(BaseModel):
 class ScanDetailOut(ScanOut):
     findings: list[FindingOut] = []
     report: ReportOut | None = None
+
+
+class ScanDiffOut(BaseModel):
+    previous_scan_id: int | None
+    previous_created_at: datetime | None
+    risk_score_delta: float | None
+    new_findings: list[FindingOut]
+    resolved_findings: list[FindingOut]
+    persisting_count: int

@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { askReportQuestion, getChatHistory, getScan } from '../api/endpoints'
+import { askReportQuestion, getChatHistory, getScan, getScanDiff } from '../api/endpoints'
 import { SeverityBadge } from '../components/SeverityBadge'
-import type { ChatMessage, ScanDetail } from '../types'
+import type { ChatMessage, ScanDetail, ScanDiff } from '../types'
 
 export function ScanPage() {
   const { scanId } = useParams()
   const id = Number(scanId)
 
   const [scan, setScan] = useState<ScanDetail | null>(null)
+  const [diff, setDiff] = useState<ScanDiff | null>(null)
   const [chat, setChat] = useState<ChatMessage[]>([])
   const [question, setQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
@@ -19,6 +20,7 @@ export function ScanPage() {
     setScan(s)
     if (s.status === 'completed') {
       setChat(await getChatHistory(id))
+      setDiff(await getScanDiff(id))
     }
     if (s.status === 'completed' || s.status === 'failed') {
       if (pollRef.current) clearInterval(pollRef.current)
@@ -76,7 +78,19 @@ export function ScanPage() {
         <div className="mb-8 rounded-md border border-purple-900 bg-purple-950/20 p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-medium text-purple-300">AI Risk Raporu</h2>
-            <span className="text-xl font-semibold">{scan.report.risk_score.toFixed(0)}/100</span>
+            <span className="flex items-center gap-2 text-xl font-semibold">
+              {scan.report.risk_score.toFixed(0)}/100
+              {diff?.risk_score_delta != null && diff.risk_score_delta !== 0 && (
+                <span
+                  className={`text-sm font-normal ${
+                    diff.risk_score_delta > 0 ? 'text-red-400' : 'text-emerald-400'
+                  }`}
+                >
+                  ({diff.risk_score_delta > 0 ? '+' : ''}
+                  {diff.risk_score_delta.toFixed(0)})
+                </span>
+              )}
+            </span>
           </div>
           <p className="mb-3 text-sm text-slate-200">{scan.report.executive_summary}</p>
           <p className="mb-4 text-sm text-slate-400">{scan.report.technical_summary}</p>
@@ -93,6 +107,46 @@ export function ScanPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {diff && diff.previous_scan_id !== null && (
+        <div className="mb-8 rounded-md border border-slate-800 bg-slate-900/50 p-4">
+          <h2 className="mb-3 font-medium">
+            Onceki taramaya gore degisim
+            <span className="ml-2 text-sm font-normal text-slate-500">
+              ({new Date(diff.previous_created_at!).toLocaleDateString('tr-TR')} tarihli tarama ile kiyaslandi)
+            </span>
+          </h2>
+          <div className="mb-3 flex gap-4 text-sm">
+            <span className="text-red-400">{diff.new_findings.length} yeni bulgu</span>
+            <span className="text-emerald-400">{diff.resolved_findings.length} kapatilmis bulgu</span>
+            <span className="text-slate-500">{diff.persisting_count} degismeden devam ediyor</span>
+          </div>
+          {diff.new_findings.length > 0 && (
+            <div className="mb-3 flex flex-col gap-2">
+              {diff.new_findings.map((f) => (
+                <div key={f.id} className="rounded-md border border-red-900/50 bg-red-950/20 p-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <SeverityBadge severity={f.severity} />
+                    <span className="font-medium">Yeni: {f.title}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {diff.resolved_findings.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {diff.resolved_findings.map((f) => (
+                <div key={f.id} className="rounded-md border border-emerald-900/50 bg-emerald-950/20 p-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <SeverityBadge severity={f.severity} />
+                    <span className="font-medium">Kapatildi: {f.title}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

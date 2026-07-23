@@ -7,6 +7,7 @@ pentest-tools.com tarzi otomatik güvenlik tarama araçlarını, **AI destekli r
 - **Ham veri değil, risk hikayesi**: Her taramanın sonunda AI, bulguları risk skoru + yönetici özeti + teknik özet + önceliklendirilmiş, remediation önerili bir listeye dönüştürür.
 - **Rapor üzerinde sohbet**: Kullanıcı, üretilen rapor hakkında doğal dilde soru sorabilir ("en kritik bulgu neden önemli, nasıl kapatırım?").
 - **Yetkilendirme farkındalığı**: Bir hedef, DNS TXT kaydıyla sahiplik doğrulanmadan taranamaz — gerçek bir pentest aracında olması gereken temel bir kısıtlama.
+- **Trend farkındalığı**: Her tarama, aynı hedefin bir önceki taramasıyla otomatik kıyaslanır (yeni/kapatılan bulgular, risk skoru değişimi) ve bu bağlam AI özetine de yansıtılır.
 
 ## Mimari
 
@@ -80,7 +81,7 @@ npm run dev
 
 ## Yol haritası
 
-- Aynı hedefin geçmiş taramaları arasında trend/diff analizi
+- [x] Aynı hedefin geçmiş taramaları arasında trend/diff analizi (`GET /api/scans/{id}/diff`, AI özetine trend bağlamı besleniyor)
 - Ek pasif web-vuln kontrolleri (eski JS kütüphaneleri, açık dizin listeleme)
 - PDF rapor export
 - Alembic ile şema migration yönetimi
