@@ -9,6 +9,11 @@ import type {
   VerifyInstructions,
 } from '../types'
 
+export async function getPublicConfig(): Promise<{ skip_target_verification: boolean }> {
+  const { data } = await apiClient.get<{ skip_target_verification: boolean }>('/api/config')
+  return data
+}
+
 export async function login(email: string, password: string): Promise<string> {
   const form = new URLSearchParams()
   form.set('username', email)

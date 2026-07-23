@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     ANTHROPIC_MODEL: str = ""
 
     VERIFICATION_TXT_PREFIX: str = "_sentrascan-verify"
+    # DEV ONLY: skips the real DNS TXT ownership check so the scan flow can
+    # be demoed without owning a domain. Never enable this on a shared or
+    # production deployment - it lets any authenticated user "verify" and
+    # scan any domain.
+    SKIP_TARGET_VERIFICATION: bool = False
 
     # Recon module tuning
     RECON_PORT_LIST: list[int] = [21, 22, 25, 80, 110, 143, 443, 3306, 3389, 5432, 6379, 8080, 8443]

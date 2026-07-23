@@ -48,6 +48,13 @@ docker compose up --build
 
 `ANTHROPIC_API_KEY` boş bırakılırsa AI rapor katmanı devre dışı kalmaz; bulgulara dayalı, deterministik bir fallback rapor üretir — yani proje AI anahtarı olmadan da uçtan uca çalışır.
 
+### Sahibi olmadığın bir domain'le denemek istersen
+
+Gerçek bir tarama başlatmak için hedefin DNS TXT kaydıyla doğrulanması gerekir (bkz. aşağıdaki "Kullanım akışı"). Kendi domain'in yoksa iki seçeneğin var:
+
+1. **Demo modu**: `backend/.env` içine `SKIP_TARGET_VERIFICATION=true` ekle, container'ları yeniden başlat. Bu durumda "Doğrulamayı kontrol et" butonu gerçek bir DNS kontrolü yapmadan hedefi doğrular. **Sadece kendi bilgisayarında, tek başına kullanırken aç — başkalarıyla paylaşılan bir ortamda asla açma**, aksi halde herkes sahip olmadığı domainleri "doğrulayıp" tarayabilir.
+2. Hedef olarak **`scanme.nmap.org`** kullan — Nmap projesinin, tarama araçlarını denemeniz için açıkça izin verdiği resmi bir test sunucusudur. (Demo modu kapalıyken bile bu domain için TXT kaydı ekleyemeyeceğin için yine `SKIP_TARGET_VERIFICATION=true` gerekir; asıl fayda, taramanın gerçek/anlamlı sonuçlar üretmesidir.)
+
 Şema, `backend` container'ı ayağa kalkarken otomatik olarak `alembic upgrade head` ile oluşturulur/güncellenir — ayrıca bir şey yapmana gerek yok.
 
 ### Veritabanı migrationları

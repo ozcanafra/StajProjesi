@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   createScan,
+  getPublicConfig,
   getTarget,
   getVerifyInstructions,
   listScans,
@@ -33,6 +34,7 @@ export function TargetPage() {
   const [verifyError, setVerifyError] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
+  const [skipVerification, setSkipVerification] = useState(false)
 
   async function refresh() {
     const [t, s] = await Promise.all([getTarget(id), listScans(id)])
@@ -45,6 +47,7 @@ export function TargetPage() {
 
   useEffect(() => {
     refresh()
+    getPublicConfig().then((c) => setSkipVerification(c.skip_target_verification))
     const interval = setInterval(() => {
       listScans(id).then(setScans)
     }, 5000)
@@ -92,6 +95,14 @@ export function TargetPage() {
       {!target.is_verified && instructions && (
         <div className="mb-8 rounded-md border border-yellow-900 bg-yellow-950/30 p-4">
           <h2 className="mb-2 font-medium text-yellow-300">Sahiplik dogrulamasi gerekli</h2>
+          {skipVerification && (
+            <div className="mb-3 rounded-md border border-purple-800 bg-purple-950/40 px-3 py-2 text-sm text-purple-300">
+              Demo modu aktif: DNS TXT kontrolu atlaniyor, asagidaki butona basman yeterli. Gercek bir
+              domain'in yoksa deneme icin{' '}
+              <code className="rounded bg-slate-900 px-1 py-0.5">scanme.nmap.org</code> kullanabilirsin
+              (Nmap projesinin tarama testleri icin acikca izin verdigi resmi test hedefi).
+            </div>
+          )}
           <p className="mb-3 text-sm text-slate-300">{instructions.instructions}</p>
           <div className="mb-3 rounded bg-slate-900 p-3 font-mono text-xs">
             <div>Kayit adi: {instructions.record_name}</div>

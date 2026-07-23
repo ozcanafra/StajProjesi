@@ -57,19 +57,20 @@ def verify_target(
     target_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ) -> Target:
     target = get_owned_target(target_id, db, current_user)
-    record_name = f"{settings.VERIFICATION_TXT_PREFIX}.{target.domain}"
 
-    try:
-        answers = dns.resolver.resolve(record_name, "TXT")
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.exception.DNSException) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"TXT kaydi bulunamadi veya sorgulanamadi: {exc}",
-        ) from exc
+    if not settings.SKIP_TARGET_VERIFICATION:
+        record_name = f"{settings.VERIFICATION_TXT_PREFIX}.{target.domain}"
+        try:
+            answers = dns.resolver.resolve(record_name, "TXT")
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.exception.DNSException) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"TXT kaydi bulunamadi veya sorgulanamadi: {exc}",
+            ) from exc
 
-    found = any(target.verification_token in b.decode() for rdata in answers for b in rdata.strings)
-    if not found:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dogrulama token'i eslesmedi")
+        found = any(target.verification_token in b.decode() for rdata in answers for b in rdata.strings)
+        if not found:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dogrulama token'i eslesmedi")
 
     target.is_verified = True
     db.commit()

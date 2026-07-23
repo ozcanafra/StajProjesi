@@ -20,6 +20,11 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/config")
+def public_config() -> dict[str, bool]:
+    return {"skip_target_verification": settings.SKIP_TARGET_VERIFICATION}
+
+
 app.include_router(auth.router)
 app.include_router(targets.router)
 app.include_router(scans.router)
