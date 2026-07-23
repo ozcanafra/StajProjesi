@@ -48,6 +48,16 @@ docker compose up --build
 
 `ANTHROPIC_API_KEY` boş bırakılırsa AI rapor katmanı devre dışı kalmaz; bulgulara dayalı, deterministik bir fallback rapor üretir — yani proje AI anahtarı olmadan da uçtan uca çalışır.
 
+Şema, `backend` container'ı ayağa kalkarken otomatik olarak `alembic upgrade head` ile oluşturulur/güncellenir — ayrıca bir şey yapmana gerek yok.
+
+### Veritabanı migrationları
+
+Modellerde değişiklik yaptıktan sonra yeni bir migration üretmek için (backend klasöründe, venv aktifken):
+```bash
+alembic revision --autogenerate -m "kisa aciklama"
+alembic upgrade head
+```
+
 ## Yerel gelistirme (Docker'siz)
 
 **Backend**
@@ -56,6 +66,7 @@ cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # DATABASE_URL/REDIS_URL'i localhost'a gore duzenleyin
+alembic upgrade head   # semayi olustur/guncelle
 uvicorn app.main:app --reload
 ```
 
@@ -86,4 +97,4 @@ npm run dev
 - [x] Aynı hedefin geçmiş taramaları arasında trend/diff analizi (`GET /api/scans/{id}/diff`, AI özetine trend bağlamı besleniyor)
 - [x] Ek pasif web-vuln kontrolleri (`webvuln` modülü: eski JS kütüphaneleri, açık dizin listeleme, hassas dosya sızıntısı, güvensiz form ayarları)
 - [x] PDF rapor export (`GET /api/scans/{id}/report.pdf`, frontend'de "PDF indir" butonu)
-- Alembic ile şema migration yönetimi
+- [x] Alembic ile şema migration yönetimi (`backend/alembic/`, `docker-compose` backend servisi başlamadan `alembic upgrade head` çalıştırır)

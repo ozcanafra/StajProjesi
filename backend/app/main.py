@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import auth, reports, scans, targets
 from app.core.config import settings
-from app.db.base_class import Base
-from app.db.session import engine
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -15,13 +13,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    import app.models  # noqa: F401 - ensure models are registered on Base before create_all
-
-    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/api/health")
