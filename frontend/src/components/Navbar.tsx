@@ -5,9 +5,12 @@ export function Navbar() {
   const { user, logout } = useAuth()
 
   return (
-    <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link to="/" className="text-lg font-semibold text-slate-100">
+        <Link to="/" className="flex items-center gap-2.5 text-lg font-semibold text-slate-100">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600 text-sm font-bold text-white">
+            S
+          </span>
           Sentra<span className="text-purple-400">Scan</span>
         </Link>
         {user && (
