@@ -1,6 +1,7 @@
 """HTTP security header + TLS/certificate posture checks.
 
-Entirely passive: a single HTTPS GET plus a TLS handshake against the
+Entirely passive: a single GET (HTTPS, falling back to HTTP if the
+target doesn't serve TLS) plus a TLS handshake attempt against the
 target's own port 443. No injection payloads, no credential attempts.
 """
 
@@ -9,6 +10,8 @@ import ssl
 from datetime import datetime, timezone
 
 import requests
+
+from app.services.scanners import http_utils
 
 REQUIRED_HEADERS = {
     "Strict-Transport-Security": ("medium", "HSTS eksik: taraycilar HTTP'ye dusme riskiyle karsi karsiya."),
@@ -23,20 +26,34 @@ WEAK_TLS_VERSIONS = {"TLSv1", "TLSv1.1", "SSLv3", "SSLv2"}
 
 def check_headers(domain: str) -> list[dict]:
     findings: list[dict] = []
-    url = f"https://{domain}"
     try:
-        resp = requests.get(url, timeout=10, allow_redirects=True, headers={"User-Agent": "SentraScan/1.0"})
+        resp, base_url = http_utils.get(domain, allow_redirects=True)
     except requests.RequestException as exc:
         return [
             {
                 "module": "headers_tls",
-                "key": "https-unreachable",
+                "key": "unreachable",
                 "severity": "medium",
-                "title": "HTTPS uzerinden erisilemedi",
-                "description": f"{url} adresine baglanilamadi: {exc}",
-                "evidence": {"url": url},
+                "title": "Hedefe HTTP(S) uzerinden erisilemedi",
+                "description": f"{domain} adresine ne HTTPS ne de HTTP ile baglanilabildi: {exc}",
+                "evidence": {"domain": domain},
             }
         ]
+
+    if base_url.startswith("http://"):
+        findings.append(
+            {
+                "module": "headers_tls",
+                "key": "https-not-supported",
+                "severity": "medium",
+                "title": "Hedef HTTPS uzerinden erisilemedi, duz HTTP'ye dusuldu",
+                "description": (
+                    "https:// baglantisi basarisiz oldu, http:// ile devam edildi. Tum trafik "
+                    "sifrelenmeden tasiniyor olabilir."
+                ),
+                "evidence": {"base_url": base_url},
+            }
+        )
 
     for header, (severity, description) in REQUIRED_HEADERS.items():
         if header not in resp.headers:
@@ -47,7 +64,7 @@ def check_headers(domain: str) -> list[dict]:
                     "severity": severity,
                     "title": f"Eksik guvenlik header'i: {header}",
                     "description": description,
-                    "evidence": {"url": url},
+                    "evidence": {"url": base_url},
                 }
             )
 
@@ -91,7 +108,7 @@ def check_headers(domain: str) -> list[dict]:
                 "severity": "info",
                 "title": "Temel guvenlik header'lari mevcut",
                 "description": "Kontrol edilen zorunlu header'larin tumu bulundu.",
-                "evidence": {"url": url},
+                "evidence": {"url": base_url},
             }
         )
 
@@ -99,7 +116,6 @@ def check_headers(domain: str) -> list[dict]:
 
 
 def check_tls(domain: str) -> list[dict]:
-    findings: list[dict] = []
     context = ssl.create_default_context()
 
     try:
@@ -107,6 +123,17 @@ def check_tls(domain: str) -> list[dict]:
             with context.wrap_socket(sock, server_hostname=domain) as ssock:
                 cert = ssock.getpeercert()
                 protocol = ssock.version()
+    except (ConnectionRefusedError, TimeoutError, socket.gaierror) as exc:
+        return [
+            {
+                "module": "headers_tls",
+                "key": "https-port-closed",
+                "severity": "info",
+                "title": "Hedef 443 portunda HTTPS sunmuyor",
+                "description": f"{domain}:443 uzerinde baglanti kurulamadi ({exc}). Site sadece HTTP uzerinden calisiyor olabilir.",
+                "evidence": {"domain": domain},
+            }
+        ]
     except (OSError, ssl.SSLError) as exc:
         return [
             {
@@ -118,6 +145,8 @@ def check_tls(domain: str) -> list[dict]:
                 "evidence": {"domain": domain},
             }
         ]
+
+    findings: list[dict] = []
 
     if protocol in WEAK_TLS_VERSIONS:
         findings.append(
