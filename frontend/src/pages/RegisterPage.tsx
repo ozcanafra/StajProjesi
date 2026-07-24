@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { getErrorMessage } from '../api/errors'
 import { useAuth } from '../context/AuthContext'
 
 export function RegisterPage() {
@@ -17,8 +18,8 @@ export function RegisterPage() {
     try {
       await register(email, password)
       navigate('/')
-    } catch {
-      setError('Kayit basarisiz. Bu e-posta zaten kullaniliyor olabilir.')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Kayit basarisiz. Bu e-posta zaten kullaniliyor olabilir.'))
     } finally {
       setIsSubmitting(false)
     }

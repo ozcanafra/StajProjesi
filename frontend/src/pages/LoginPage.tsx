@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { getErrorMessage } from '../api/errors'
 import { useAuth } from '../context/AuthContext'
 
 export function LoginPage() {
@@ -17,8 +18,8 @@ export function LoginPage() {
     try {
       await login(email, password)
       navigate('/')
-    } catch {
-      setError('Giris basarisiz. E-posta veya sifre hatali.')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Giris basarisiz. E-posta veya sifre hatali.'))
     } finally {
       setIsSubmitting(false)
     }
