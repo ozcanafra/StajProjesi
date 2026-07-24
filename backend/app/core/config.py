@@ -15,8 +15,8 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
-    ANTHROPIC_API_KEY: str = ""
-    ANTHROPIC_MODEL: str = ""
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = ""
 
     VERIFICATION_TXT_PREFIX: str = "_sentrascan-verify"
     # DEV ONLY: skips the real DNS TXT ownership check so the scan flow can

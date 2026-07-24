@@ -21,7 +21,7 @@ backend (FastAPI)  ---->  PostgreSQL (kullanıcı/hedef/tarama/bulgu/rapor)
 worker (Celery)  ---->  Redis (broker)
         |
         +--> scanner modülleri (recon, headers_tls, webvuln)
-        +--> AI servis katmanı (Anthropic API) --> Report + chat
+        +--> AI servis katmanı (Google Gemini API) --> Report + chat
 ```
 
 ### Modüller
@@ -38,7 +38,7 @@ Tüm kontroller **pasiftir**: aktif exploit denemesi, kimlik doğrulama bypass'�
 ## Kurulum (Docker Compose)
 
 ```bash
-cp backend/.env.example backend/.env      # SECRET_KEY'i degistirin, isterseniz ANTHROPIC_API_KEY/ANTHROPIC_MODEL ekleyin
+cp backend/.env.example backend/.env      # SECRET_KEY'i degistirin, isterseniz GEMINI_API_KEY/GEMINI_MODEL ekleyin
 cp frontend/.env.example frontend/.env
 docker compose up --build
 ```
@@ -46,7 +46,7 @@ docker compose up --build
 - Backend: http://localhost:8000 (Swagger: `/docs`)
 - Frontend: http://localhost:5173
 
-`ANTHROPIC_API_KEY` boş bırakılırsa AI rapor katmanı devre dışı kalmaz; bulgulara dayalı, deterministik bir fallback rapor üretir — yani proje AI anahtarı olmadan da uçtan uca çalışır.
+`GEMINI_API_KEY` boş bırakılırsa AI rapor katmanı devre dışı kalmaz; bulgulara dayalı, deterministik bir fallback rapor üretir — yani proje AI anahtarı olmadan da uçtan uca çalışır. Ücretsiz bir anahtar için: [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (kredi kartı gerekmez).
 
 ### Sahibi olmadığın bir domain'le denemek istersen
 
