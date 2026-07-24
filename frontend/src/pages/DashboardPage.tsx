@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { getErrorMessage } from '../api/errors'
 import { createTarget, deleteTarget, listTargets } from '../api/endpoints'
 import type { Target } from '../types'
 
@@ -29,8 +30,8 @@ export function DashboardPage() {
       await createTarget(domain.trim())
       setDomain('')
       await refresh()
-    } catch {
-      setError('Hedef eklenemedi. Domain formatini kontrol edin.')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Hedef eklenemedi. Domain formatini kontrol edin.'))
     }
   }
 
@@ -60,20 +61,26 @@ export function DashboardPage() {
             <span className="h-2 w-2 rounded-full bg-purple-500" />
             <h2 className="font-semibold">Yeni hedef ekle</h2>
           </div>
-          <form onSubmit={handleAdd} className="flex flex-col gap-3 p-6 sm:flex-row">
-            <input
-              required
-              placeholder="ornek.com"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-            />
-            <button
-              type="submit"
-              className="rounded-xl bg-purple-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-600/30 transition hover:bg-purple-500"
-            >
-              Hedef ekle
-            </button>
+          <form onSubmit={handleAdd} className="flex flex-col gap-2 p-6">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input
+                required
+                placeholder="ornek.com"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+              />
+              <button
+                type="submit"
+                className="rounded-xl bg-purple-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-600/30 transition hover:bg-purple-500"
+              >
+                Hedef ekle
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Sadece domain adini yaz (orn. <code className="text-slate-500">ornek.com</code>), basina
+              "https://" eklemene gerek yok - eklesen de otomatik temizlenir.
+            </p>
           </form>
           {error && <p className="px-6 pb-4 text-sm text-red-600">{error}</p>}
         </div>

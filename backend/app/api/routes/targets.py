@@ -16,8 +16,7 @@ router = APIRouter(prefix="/api/targets", tags=["targets"])
 def create_target(
     payload: TargetCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ) -> Target:
-    domain = payload.domain.strip().lower()
-    target = Target(owner_id=current_user.id, domain=domain)
+    target = Target(owner_id=current_user.id, domain=payload.domain)
     db.add(target)
     db.commit()
     db.refresh(target)
