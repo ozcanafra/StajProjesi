@@ -89,7 +89,45 @@ alembic revision --autogenerate -m "kisa aciklama"
 alembic upgrade head
 ```
 
-## Yerel gelistirme (Docker'siz)
+## Docker'siz hizli baslangic (Postgres/Redis gerekmez)
+
+Docker kurulu degilse veya calismiyorsa proje **sadece Python + Node** ile ayaga kalkar: veritabani icin SQLite, tarama kuyrugu icin de Celery'nin eager modu kullanilir. Eager modda tarama, ayri bir worker yerine API isteginin icinde senkron calisir; boylece Redis'e de gerek kalmaz.
+
+`backend/.env` dosyasini soyle olusturun:
+
+```bash
+DATABASE_URL=sqlite:///./sentrascan.db
+CELERY_TASK_ALWAYS_EAGER=true
+SECRET_KEY=<python -c "import secrets; print(secrets.token_hex(32))" ciktisi>
+CORS_ORIGINS=["http://localhost:5173"]
+SKIP_TARGET_VERIFICATION=true
+```
+
+Windows PowerShell:
+
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+Ayri bir terminalde frontend:
+
+```powershell
+cd frontend
+npm install
+echo "VITE_API_URL=http://localhost:8000" > .env
+npm run dev
+```
+
+Ardindan http://localhost:5173 adresini acin. AI ozeti icin Ollama'yi kurup (`ollama pull qwen2.5:3b`) `backend/.env` icine `OLLAMA_BASE_URL=http://localhost:11434` ekleyin; kurmazsaniz sistem kural tabanli fallback rapor uretir.
+
+> Eager mod yalnizca yerel demo/gelistirme icindir: tarama bitene kadar HTTP istegi bekler. Gercek kullanimda `CELERY_TASK_ALWAYS_EAGER` false birakilip Redis + worker ile calistirilmalidir.
+
+## Yerel gelistirme (Docker'siz, Celery worker ile)
 
 **Backend**
 ```bash

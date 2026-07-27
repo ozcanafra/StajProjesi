@@ -15,4 +15,8 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    # Eager modda .delay() cagrisi broker'a hic gitmez, gorev ayni surecte
+    # calisir; boylece Redis olmadan da tarama akisi denenebilir.
+    task_always_eager=settings.CELERY_TASK_ALWAYS_EAGER,
+    task_eager_propagates=False,
 )

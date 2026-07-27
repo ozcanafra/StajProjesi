@@ -9,6 +9,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+psycopg2://sentrascan:sentrascan@db:5432/sentrascan"
     REDIS_URL: str = "redis://redis:6379/0"
 
+    # true yapilirsa taramalar Celery kuyruguna gonderilmez, API isteginin
+    # icinde senkron calisir. Redis ve ayri bir worker gerekmedigi icin
+    # Docker'siz yerel demo/gelistirme kolaylasir. Tarama bitene kadar
+    # istek bekledigi icin gercek kullanimda false kalmalidir.
+    CELERY_TASK_ALWAYS_EAGER: bool = False
+
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
