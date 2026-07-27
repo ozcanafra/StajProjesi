@@ -24,6 +24,12 @@ services:
   # Ilk kalkista model indirilmedigi icin rapor katmani fallback'e duser;
   # modeli bir kez indirmek gerekir:
   #   docker compose exec ollama ollama pull qwen2.5:3b
+  #
+  # backend/worker bu servise bilerek depends_on ile baglanmadi: Ollama
+  # ayakta olsa bile model indirilmemis olabilecegi icin "started" durumu
+  # bir garanti vermiyor, uygulama zaten ulasamadiginda fallback rapora
+  # dusuyor. Boylece Ollama'yi host'a kurup `--scale ollama=0` ile bu
+  # servisi kapatmak da sorunsuz calisiyor.
   ollama:
     image: ollama/ollama:latest
     volumes:
@@ -44,8 +50,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      ollama:
-        condition: service_started
     ports:
       - "8000:8000"
     volumes:
@@ -59,8 +63,6 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
-      ollama:
         condition: service_started
     volumes:
       - ./backend:/app
