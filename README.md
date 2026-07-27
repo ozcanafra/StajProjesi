@@ -21,7 +21,7 @@ backend (FastAPI)  ---->  PostgreSQL (kullanıcı/hedef/tarama/bulgu/rapor)
 worker (Celery)  ---->  Redis (broker)
         |
         +--> scanner modülleri (recon, headers_tls, webvuln)
-        +--> AI servis katmanı (Google Gemini API) --> Report + chat
+        +--> AI servis katmanı (yerel Ollama) --> Report + chat
 ```
 
 ### Modüller
@@ -38,15 +38,28 @@ Tüm kontroller **pasiftir**: aktif exploit denemesi, kimlik doğrulama bypass'�
 ## Kurulum (Docker Compose)
 
 ```bash
-cp backend/.env.example backend/.env      # SECRET_KEY'i degistirin, isterseniz GEMINI_API_KEY/GEMINI_MODEL ekleyin
+cp backend/.env.example backend/.env      # SECRET_KEY'i degistirin
 cp frontend/.env.example frontend/.env
 docker compose up --build
 ```
 
 - Backend: http://localhost:8000 (Swagger: `/docs`)
 - Frontend: http://localhost:5173
+- Ollama: http://localhost:11434
 
-`GEMINI_API_KEY` boş bırakılırsa AI rapor katmanı devre dışı kalmaz; bulgulara dayalı, deterministik bir fallback rapor üretir — yani proje AI anahtarı olmadan da uçtan uca çalışır. Ücretsiz bir anahtar için: [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (kredi kartı gerekmez).
+### AI katmanı için modeli indirin
+
+AI rapor/chat katmanı **yerel Ollama** üzerinden çalışır: API anahtarı gerekmez, ücretsizdir ve tarama bulguları makineden dışarı çıkmaz. Container'lar ayağa kalktıktan sonra modeli bir kez indirin:
+
+```bash
+docker compose exec ollama ollama pull qwen2.5:3b
+```
+
+Model yaklaşık 2 GB'dır ve `ollama_data` volume'ünde kalır, tekrar indirmeniz gerekmez. Farklı bir model kullanmak isterseniz `backend/.env` içindeki `OLLAMA_MODEL` değerini değiştirin (`qwen2.5:7b` ve `llama3.1:8b` daha kaliteli ama daha yavaş, `qwen2.5:1.5b` daha hızlı ama daha zayıf).
+
+Ollama çalışmıyorsa veya model indirilmemişse sistem çökmez: bulgulara dayalı, deterministik bir fallback rapor üretilir — yani proje AI katmanı olmadan da uçtan uca çalışır.
+
+> CPU üzerinde çıkarım yavaş olabilir; bir rapor üretimi 1-3 dakika sürebilir. Zaman aşımı `OLLAMA_TIMEOUT` ile ayarlanır (varsayılan 300 sn).
 
 ### Sahibi olmadığın bir domain'le denemek istersen
 

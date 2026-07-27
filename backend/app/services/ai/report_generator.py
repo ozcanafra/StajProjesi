@@ -3,14 +3,15 @@ plus a Q&A chat layer over that report. This is the differentiating
 layer of the product: instead of dumping raw tool output, findings are
 turned into a prioritized, explained, remediation-oriented narrative.
 
-Uses Google's Gemini API (free tier available) via the google-genai SDK.
+Runs against a local Ollama server, so no API key, no per-request cost
+and no data leaving the machine - the scan findings stay on the host
+that produced them.
 """
 
 import json
 from typing import Any
 
-from google import genai
-from google.genai import errors, types
+import requests
 
 from app.core.config import settings
 
@@ -32,6 +33,7 @@ tam olarak su JSON semasina uyan bir yanit uretmek:
   ]
 }
 
+Sadece JSON dondur, aciklama veya markdown kod bloku ekleme. \
 prioritized_findings listesini risk siralamasina gore (en kritik once) diz. \
 Eger sana onceki taramayla kiyaslanmis bir degisim (trend) bilgisi verilirse, \
 executive_summary'nin icine bu degisimi (yeni/kapatilan bulgu sayisi, risk \
@@ -42,11 +44,35 @@ tarama raporu hakkinda sorulan sorulari, rapor baglamini kullanarak Turkce ve \
 anlasilir bicimde yanitla. Rapor disindaki konularda spekulasyon yapma, bulgulara \
 dayan."""
 
+SETUP_HINT = (
+    "Ollama sunucusuna ulasilamadi. Kurulum: https://ollama.com/download adresinden "
+    f"Ollama'yi kurup `ollama pull {settings.OLLAMA_MODEL}` ile modeli indirin, "
+    "docker-compose kullaniyorsaniz `ollama` servisinin ayakta oldugunu kontrol edin."
+)
 
-def _client() -> genai.Client | None:
-    if not settings.GEMINI_API_KEY or not settings.GEMINI_MODEL:
-        return None
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
+
+def _chat(messages: list[dict], json_mode: bool, num_predict: int) -> str:
+    """POSTs to Ollama's /api/chat and returns the assistant message text.
+
+    Raises requests.RequestException when the server is unreachable or the
+    model is missing, so callers can degrade to a non-AI response.
+    """
+    payload: dict[str, Any] = {
+        "model": settings.OLLAMA_MODEL,
+        "messages": messages,
+        "stream": False,
+        "options": {"temperature": 0.2, "num_predict": num_predict},
+    }
+    if json_mode:
+        payload["format"] = "json"
+
+    resp = requests.post(
+        f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/chat",
+        json=payload,
+        timeout=settings.OLLAMA_TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()["message"]["content"]
 
 
 def _fallback_report(findings: list[dict], trend_context: str | None = None) -> dict[str, Any]:
@@ -54,7 +80,7 @@ def _fallback_report(findings: list[dict], trend_context: str | None = None) -> 
     score = min(100, sum(severity_weight.get(f["severity"], 0) for f in findings))
     prioritized = sorted(findings, key=lambda f: severity_weight.get(f["severity"], 0), reverse=True)
     summary = (
-        "AI rapor katmani yapilandirilmamis (GEMINI_API_KEY tanimli degil). "
+        "AI rapor katmani devrede degil, bulgular kural tabanli olarak ozetlendi. "
         f"Toplam {len(findings)} ham bulgu tespit edildi, agirliklandirilmis risk skoru: {score}."
     )
     if trend_context:
@@ -62,13 +88,13 @@ def _fallback_report(findings: list[dict], trend_context: str | None = None) -> 
     return {
         "risk_score": score,
         "executive_summary": summary,
-        "technical_summary": "Detayli teknik yorum icin GEMINI_API_KEY ve GEMINI_MODEL ayarlarini yapilandirin.",
+        "technical_summary": SETUP_HINT,
         "prioritized_findings": [
             {
                 "title": f["title"],
                 "severity": f["severity"],
                 "business_impact": f.get("description", ""),
-                "remediation": "AI destekli remediation onerisi icin GEMINI_API_KEY gereklidir.",
+                "remediation": "AI destekli remediation onerisi icin Ollama sunucusu gereklidir.",
             }
             for f in prioritized[:10]
         ],
@@ -76,10 +102,6 @@ def _fallback_report(findings: list[dict], trend_context: str | None = None) -> 
 
 
 def generate_report(target_domain: str, findings: list[dict], trend_context: str | None = None) -> dict[str, Any]:
-    client = _client()
-    if client is None:
-        return _fallback_report(findings, trend_context)
-
     user_prompt = (
         f"Hedef domain: {target_domain}\n\nHam bulgular (JSON):\n"
         f"{json.dumps(findings, ensure_ascii=False, indent=2)}"
@@ -88,31 +110,23 @@ def generate_report(target_domain: str, findings: list[dict], trend_context: str
         user_prompt += f"\n\nOnceki taramaya gore degisim: {trend_context}"
 
     try:
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                response_mime_type="application/json",
-                max_output_tokens=4096,
-            ),
+        content = _chat(
+            [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            json_mode=True,
+            num_predict=4096,
         )
-        data = json.loads(response.text)
+        data = json.loads(content)
         data.setdefault("prioritized_findings", [])
         data["risk_score"] = float(data.get("risk_score", 0))
         return data
-    except (errors.APIError, json.JSONDecodeError, ValueError, KeyError, AttributeError):
+    except (requests.RequestException, json.JSONDecodeError, ValueError, KeyError, TypeError):
         return _fallback_report(findings, trend_context)
 
 
 def chat_about_report(report: Any, history: list[dict], question: str) -> str:
-    client = _client()
-    if client is None:
-        return (
-            "AI sohbet ozelligi su an yapilandirilmamis. Lutfen GEMINI_API_KEY ve "
-            "GEMINI_MODEL ortam degiskenlerini ayarlayin."
-        )
-
     context = (
         f"Risk skoru: {report.risk_score}\n"
         f"Yonetici ozeti: {report.executive_summary}\n"
@@ -121,24 +135,15 @@ def chat_about_report(report: Any, history: list[dict], question: str) -> str:
         f"{json.dumps(report.prioritized_findings, ensure_ascii=False)}"
     )
 
-    contents = [
-        types.Content(role="user", parts=[types.Part.from_text(text=f"Rapor baglami:\n{context}")]),
-        types.Content(
-            role="model",
-            parts=[types.Part.from_text(text="Rapor baglamini aldim, sorularinizi yanitlamaya hazirim.")],
-        ),
+    messages = [
+        {"role": "system", "content": CHAT_SYSTEM_PROMPT},
+        {"role": "user", "content": f"Rapor baglami:\n{context}"},
+        {"role": "assistant", "content": "Rapor baglamini aldim, sorularinizi yanitlamaya hazirim."},
     ]
-    for msg in history:
-        role = "model" if msg["role"] == "assistant" else "user"
-        contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
-    contents.append(types.Content(role="user", parts=[types.Part.from_text(text=question)]))
+    messages.extend({"role": msg["role"], "content": msg["content"]} for msg in history)
+    messages.append({"role": "user", "content": question})
 
     try:
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=contents,
-            config=types.GenerateContentConfig(system_instruction=CHAT_SYSTEM_PROMPT, max_output_tokens=1024),
-        )
-        return response.text or ""
-    except errors.APIError as exc:
-        return f"AI servisine ulasilamadi: {exc}"
+        return _chat(messages, json_mode=False, num_predict=1024)
+    except (requests.RequestException, KeyError, ValueError) as exc:
+        return f"AI servisine ulasilamadi ({exc.__class__.__name__}). {SETUP_HINT}"

@@ -15,8 +15,13 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
-    GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = ""
+    # AI rapor/chat katmani yerel Ollama sunucusu uzerinden calisir; API
+    # anahtari gerekmez ve bulgular makineden disari cikmaz. Ollama'ya
+    # ulasilamazsa sistem kural tabanli fallback rapora duser.
+    OLLAMA_BASE_URL: str = "http://ollama:11434"
+    OLLAMA_MODEL: str = "qwen2.5:3b"
+    # Yerel CPU cikarimi yavas olabildigi icin genis tutuldu (saniye).
+    OLLAMA_TIMEOUT: int = 300
 
     VERIFICATION_TXT_PREFIX: str = "_sentrascan-verify"
     # DEV ONLY: skips the real DNS TXT ownership check so the scan flow can
