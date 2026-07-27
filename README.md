@@ -55,7 +55,9 @@ AI rapor/chat katmanı **yerel Ollama** üzerinden çalışır: API anahtarı ge
 docker compose exec ollama ollama pull qwen2.5:3b
 ```
 
-Model yaklaşık 2 GB'dır ve `ollama_data` volume'ünde kalır, tekrar indirmeniz gerekmez. Farklı bir model kullanmak isterseniz `backend/.env` içindeki `OLLAMA_MODEL` değerini değiştirin (`qwen2.5:7b` ve `llama3.1:8b` daha kaliteli ama daha yavaş, `qwen2.5:1.5b` daha hızlı ama daha zayıf).
+Model yaklaşık 2 GB'dır ve `ollama_data` volume'ünde kalır, tekrar indirmeniz gerekmez.
+
+> **Windows/macOS kullanıyorsanız** Ollama'yı [ollama.com/download](https://ollama.com/download) üzerinden doğrudan işletim sistemine kurmak genelde daha iyidir — container'ın aksine GPU'yu kullanabilir, yani rapor üretimi belirgin şekilde hızlanır. Bu durumda `docker compose up` yerine `docker compose up --scale ollama=0` ile compose'daki Ollama'yı devre dışı bırakın ve `backend/.env` içine `OLLAMA_BASE_URL=http://host.docker.internal:11434` yazın. Modeli normal terminalden `ollama pull qwen2.5:3b` ile indirirsiniz. Farklı bir model kullanmak isterseniz `backend/.env` içindeki `OLLAMA_MODEL` değerini değiştirin (`qwen2.5:7b` ve `llama3.1:8b` daha kaliteli ama daha yavaş, `qwen2.5:1.5b` daha hızlı ama daha zayıf).
 
 Ollama çalışmıyorsa veya model indirilmemişse sistem çökmez: bulgulara dayalı, deterministik bir fallback rapor üretilir — yani proje AI katmanı olmadan da uçtan uca çalışır.
 
